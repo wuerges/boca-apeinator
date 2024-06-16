@@ -2,8 +2,36 @@ use dotenv::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 
-async fn select_runs(pool: &Pool<sqlx::Postgres>) -> Result<Vec<(i64,)>, sqlx::Error> {
-    let query = "select * from runtable as r join problemtable as p on r.contestnumber = p.contestnumber join answertable as a on a.answernumber = r.runanswer join usertable as u on u.contestnumber = r.contestnumber order by r.rundatediff desc";
+	// $sql = "select distinct r.runnumber as number, r.rundatediff as timestamp, " .
+	// 	"p.problemname as problem, r.runstatus as status, " .
+	// 	"a.yes as yes, u.username as username, " .
+	// 	"a.runanswer as answer " .
+	// 	"from runtable as r, problemtable as p, answertable as a, usertable as u " .
+	// 	"where r.contestnumber=$contest and p.contestnumber=r.contestnumber and u.contestnumber=r.contestnumber and " .
+
+#[derive(sqlx::FromRow, Debug)]
+struct Run {
+    number: i64,
+    timestamp: String,
+    problem: String,
+    status: String,
+    yes: bool,
+    username: String,
+}
+
+async fn select_runs(pool: &Pool<sqlx::Postgres>) -> Result<Vec<Run>, sqlx::Error> {
+    let query = r#"select 
+                    distinct r.runnumber as number,
+                    r.rundatediff as timestamp,
+                    p.problemname as problem,
+                    r.runstatus as status,
+                    a.yes as yes,
+                    u.username as username
+                    from runtable as r 
+                    join problemtable as p on r.contestnumber = p.contestnumber 
+                    join answertable as a on a.answernumber = r.runanswer 
+                    join usertable as u on u.contestnumber = r.contestnumber 
+                    order by r.rundatediff desc"#;
 
     sqlx::query_as(query).fetch_all(pool).await
 }
